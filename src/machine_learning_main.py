@@ -1,8 +1,12 @@
+import time
+start = time.time()
+
+import os
+os.system('cls')
+
 print("Modules importation :\n")
-
-print(f"{'    Classical modules' :-<50}", end="")
-
-from os import name
+print(f"{'    Standard modules' :-<50}", end="")
+from os import name, stat
 from re import A, X
 import numpy as np
 import pandas as pd
@@ -12,7 +16,6 @@ import csv
 import seaborn as sns
 print(" Done\n")
 
-
 print(f"{'    Sklearn modules' :-<50}", end="")
 from sklearn.metrics._plot.confusion_matrix import plot_confusion_matrix
 from sklearn.model_selection import train_test_split
@@ -21,8 +24,8 @@ from sklearn.metrics import f1_score, confusion_matrix, classification_report; p
 from sklearn.model_selection import learning_curve
 from sklearn.preprocessing import PolynomialFeatures
 
-
 print(" Done\n")
+
 
 ################################################################################
 #                                 Data Loading                                 #
@@ -121,7 +124,7 @@ f_df = df[df['Sex'] == 'female']
 m_trainset, m_testset = train_test_split(m_df, test_size=0.2, random_state=0)
 f_trainset, f_testset = train_test_split(f_df, test_size=0.2, random_state=0)
 
-########## Encoding ##########
+############# Encoding ############
 dic_param = {
     'male' : 1, 'female' : 0,
     'S': 0, 'C': 1, 'Q': 2
@@ -133,9 +136,11 @@ def encode(_df):
     
     return _df
 
+############# Imputing ############
 def impute (_df):
-    return _df.dropna()
+    return _df.fillna(_df.mean())
 
+########## Preprocessing ##########
 def preprocessing (_df):
     _df = encode(_df)
     _df = impute(_df)
@@ -189,34 +194,50 @@ evaluation(m_decision_tree, 'Male Decision Tree', m_X_train, m_y_train, m_X_test
 evaluation(f_decision_tree, 'Female Decision Tree', f_X_train, f_y_train, f_X_test, f_y_test)
 
 
-
-
 ################################################################################
 #                                   Submission                                 #
 ################################################################################
 print("Submission :")
 
+# Loading data
 sub_data = pd.read_csv("../dat/test.csv")
+# Drop useless features
 sub_df = sub_data.drop(['Name', 'Ticket', 'Cabin', 'Age'], axis=1)
 
+# Split male and female
 m_sub_df = sub_df[sub_df['Sex'] == 'male']
-print(m_sub_df.shape)
-# f_sub_df = sub_df[sub_df['Sex'] == 'female']
+f_sub_df = sub_df[sub_df['Sex'] == 'female']
 
+# Grab the IDs
 m_id = pd.DataFrame(m_sub_df['PassengerId'], columns=['PassengerId'])
-# f_id = f_sub_df['PassengerId']
+m_sub_df2 = m_sub_df.drop(['PassengerId'], axis=1)
+f_id = pd.DataFrame(f_sub_df['PassengerId'], columns=['PassengerId'])
+f_sub_df2 = f_sub_df.drop(['PassengerId'], axis=1)
 
-m_enc_sub_df = (encode(m_sub_df)).fillna(m_sub_df.mean()).drop('PassengerId', axis=1)
-# f_enc_sub_df = (encode(f_sub_df)).fillna(f_sub_df.mean()).drop('PassengerId', axis=1)
+# Encode datas
+m_enc_sub_df = (encode(m_sub_df2)).fillna(m_sub_df2.mean())
+f_enc_sub_df = (encode(f_sub_df2)).fillna(f_sub_df2.mean())
 
-m_y_pred = m_decision_tree.predict(m_enc_sub_df)
-# f_y_pred = f_decision_tree.predict(f_enc_sub_df)
+# Make predictions
+m_y_pred_df = pd.DataFrame(m_decision_tree.predict(m_enc_sub_df), columns=['Survived'])
+f_y_pred_df = pd.DataFrame(f_decision_tree.predict(f_enc_sub_df), columns=['Survived'])
 
-m_y_pred_df = pd.DataFrame(m_y_pred, columns=['Survived'])
+# Concat IDs and predictions
+m_d = [m_id['PassengerId'], m_y_pred_df['Survived']]
+headers = ['PassengerId', 'Survived']
 
-m_sub_res = pd.concat([m_id,m_y_pred_df.reindex(m_id.index)], axis=1, ignore_index=True)
+m_sub_res = pd.concat(m_d, axis=1, keys=headers)
+# f_sub_res = pd.concat([f_id,f_y_pred_df.reindex(f_id.index)], axis=1, ignore_index=True)
 
-print(m_sub_res.head())
+# Concat male and female results
+# sub_res = pd.concat([m_sub_res, f_sub_res])
 
-print(m_sub_res.shape)
-m_sub_res.to_csv('./m_sub.csv', index=False)
+# Export Results
+m_y_pred_df.to_csv('./malePred.csv', index=False)
+m_id.to_csv('./maleID.csv', index=False)
+m_sub_res.to_csv('./maleSubmission.csv', index=False)
+
+# f_sub_res.to_csv('./femaleSubmission.csv', index=False)
+# sub_res.to_csv('./submission.csv', index=False)
+
+print(f'Processing complete (time : {round(time.time()-start, 4)}s)')
