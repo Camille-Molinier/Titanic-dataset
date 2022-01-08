@@ -6,18 +6,14 @@ os.system('cls')
 
 print("Modules importation :\n")
 print(f"{'    Standard modules' :-<50}", end="")
-from os import name, stat
-from re import A, X
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import glob
-import csv
 import seaborn as sns
-from preprocessor import preprocessor
 print(" Done\n")
 
 print(f"{'    Sklearn modules' :-<50}", end="")
+from sklearn.model_selection import train_test_split
 from sklearn.metrics._plot.confusion_matrix import plot_confusion_matrix
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import f1_score, confusion_matrix, classification_report; plot_confusion_matrix
@@ -108,50 +104,73 @@ plt.rcParams.update({'figure.max_open_warning' : 30})
 #                                 Preprocessing                                #
 ################################################################################
 print("Preprocessing :")
-
 df = data.copy()
 df = df.drop(['Name', 'PassengerId', 'Ticket', 'Cabin', 'Age'], axis=1)
 
 m_df = df[df['Sex'] == 'male']
 f_df = df[df['Sex'] == 'female']
 
-male_preprocessor = preprocessor(sex=True)
-female_preprocessor = preprocessor(sex=False)
+# print(df['Sex'].value_counts(),'\n')
+# print(m_df.shape)
+# print(f_df.shape, '\n')
 
-m_X_train, m_y_train, m_X_test, m_y_test = male_preprocessor.preprocessing(m_df)
+## Train Test Split
+m_trainset, m_testset = train_test_split(m_df, test_size=0.2, random_state=0)
+f_trainset, f_testset = train_test_split(f_df, test_size=0.2, random_state=0)
 
-f_X_train, f_y_train, f_X_test, f_y_test = female_preprocessor.preprocessing(f_df)
+############# Encoding ############
+dic_param = {
+    'male' : 1, 'female' : 0,
+    'S': 0, 'C': 1, 'Q': 2
+}
 
-print(m_X_train.head(), '\n')
+def encode(_df):
+    for col in _df.select_dtypes(object):
+        _df[col] = _df[col].map(dic_param)
 
-print('Male X train   :', m_X_train.shape, m_y_train.shape)
-print('Male X test    :', m_X_test.shape, m_y_test.shape, '\n')
+    return _df
 
-print('Female X train :', f_X_train.shape, f_y_train.shape)
-print('Female X test  :', f_X_test.shape, f_y_test.shape, '\n')
+############# Imputing ############
+def impute (_df):
+    return _df.dropna()
+
+########## Preprocessing ##########
+def preprocessing (_df):
+    _df = encode(_df)
+    _df = impute(_df)
+    X = _df.drop('Survived', axis=1)
+    y = _df['Survived']
+    return X, y
+
+m_X_train, m_y_train = preprocessing(m_trainset)
+m_X_test, m_y_test = preprocessing(m_testset) 
+f_X_train, f_y_train = preprocessing(f_trainset)
+f_X_test, f_y_test = preprocessing(f_testset) 
+
+# print(m_X_train.head(), '\n')
+# print('Male X train   :', m_X_train.shape, m_y_train.shape)
+# print('Male X test    :', m_X_test.shape, m_y_test.shape, '\n')
+# print('Female X train :', f_X_train.shape, f_y_train.shape)
+# print('Female X test  :', f_X_test.shape, f_y_test.shape, '\n')
 
 
 ################################################################################
 #                                  Modelization                                #
 ################################################################################
 print("Modelization :")
-
 def evaluation (model, name, X_train, y_train, X_test, y_test) :
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
-
-    print(classification_report(y_test, y_pred))
-
-    plt.figure()
-    plot_confusion_matrix(model, X_test, y_test)
-    plt.savefig(f'../dat/fig/models/{name} matrix.png')
-
+    # print(classification_report(y_test, y_pred))
+    # plt.figure()
+    # plot_confusion_matrix(model, X_test, y_test)
+    # plt.savefig(f'../dat/fig/models/{name} matrix.png')
     N, train_score, val_score = learning_curve(model, X_train, y_train, cv=4, train_sizes=np.linspace(0.1, 1, 10))
-    plt.figure()
-    plt.plot(N, train_score.mean(axis=1), label='Train score')
-    plt.plot(N, val_score.mean(axis=1), label='Val score')
-    plt.legend()
-    plt.savefig(f'../dat/fig/models/{name} learning curve')
+    # plt.figure()
+    # plt.plot(N, train_score.mean(axis=1), label='Train score')
+    # plt.plot(N, val_score.mean(axis=1), label='Val score')
+    # plt.legend()
+    # plt.savefig(f'../dat/fig/models/{name} learning curve')
 
 m_decision_tree = DecisionTreeClassifier(random_state=0)
 f_decision_tree = DecisionTreeClassifier(random_state=0)
@@ -159,50 +178,49 @@ f_decision_tree = DecisionTreeClassifier(random_state=0)
 evaluation(m_decision_tree, 'Male Decision Tree', m_X_train, m_y_train, m_X_test, m_y_test)
 evaluation(f_decision_tree, 'Female Decision Tree', f_X_train, f_y_train, f_X_test, f_y_test)
 
-
 ################################################################################
 #                                   Submission                                 #
 ################################################################################
-# print("Submission :")
+print("Submission :")
 
-# # Loading data
-# sub_data = pd.read_csv("../dat/test.csv")
-# # Drop useless features
-# sub_df = sub_data.drop(['Name', 'Ticket', 'Cabin', 'Age'], axis=1)
+# Loading data
+sub_data = pd.read_csv("../dat/test.csv")
+# Drop useless features
+sub_df = sub_data.drop(['Name', 'Ticket', 'Cabin', 'Age'], axis=1)
 
-# # Split male and female
-# m_sub_df = sub_df[sub_df['Sex'] == 'male']
-# f_sub_df = sub_df[sub_df['Sex'] == 'female']
+# Split male and female
+m_sub_df = sub_df[sub_df['Sex'] == 'male']
+f_sub_df = sub_df[sub_df['Sex'] == 'female']
 
-# # Grab the IDs
-# m_id = pd.DataFrame(m_sub_df['PassengerId'], columns=['PassengerId'])
-# m_sub_df2 = m_sub_df.drop(['PassengerId'], axis=1)
-# f_id = pd.DataFrame(f_sub_df['PassengerId'], columns=['PassengerId'])
-# f_sub_df2 = f_sub_df.drop(['PassengerId'], axis=1)
+# Grab the IDs
+m_id = pd.DataFrame(m_sub_df['PassengerId'], columns=['PassengerId'])
+m_sub_df2 = m_sub_df.drop(['PassengerId'], axis=1)
+f_id = pd.DataFrame(f_sub_df['PassengerId'], columns=['PassengerId'])
+f_sub_df2 = f_sub_df.drop(['PassengerId'], axis=1)
 
-# # Encode datas
-# m_enc_sub_df = (encode(m_sub_df2)).fillna(m_sub_df2.mean())
-# f_enc_sub_df = (encode(f_sub_df2)).fillna(f_sub_df2.mean())
+# Encode datas
+m_enc_sub_df = (encode(m_sub_df2)).fillna(m_sub_df2.mean())
+f_enc_sub_df = (encode(f_sub_df2)).fillna(f_sub_df2.mean())
 
-# # Make predictions
-# m_y_pred = m_decision_tree.predict(m_enc_sub_df)
-# f_y_pred = f_decision_tree.predict(f_enc_sub_df)
+# Make predictions
+m_y_pred = m_decision_tree.predict(m_enc_sub_df)
+f_y_pred = f_decision_tree.predict(f_enc_sub_df)
 
-# # Concat IDs and predictions
-# m_id = list(m_id['PassengerId'])
-# f_id = list(f_id['PassengerId'])
+# Concat IDs and predictions
+m_id = list(m_id['PassengerId'])
+f_id = list(f_id['PassengerId'])
 
-# m_d = {'PassengerID' : m_id, 'Survived' : m_y_pred}
-# f_d = {'PassengerID' : f_id, 'Survived' : f_y_pred}
+m_d = {'PassengerID' : m_id, 'Survived' : m_y_pred}
+f_d = {'PassengerID' : f_id, 'Survived' : f_y_pred}
 
-# m_sub_res = pd.DataFrame(m_d)
-# f_sub_res = pd.DataFrame(f_d)
+m_sub_res = pd.DataFrame(m_d)
+f_sub_res = pd.DataFrame(f_d)
 
-# # Concat male and female results
-# sub_res = pd.concat([m_sub_res, f_sub_res])
+# Concat male and female results
+sub_res = pd.concat([m_sub_res, f_sub_res])
 
-# # Export Results
-# sub_res.to_csv('./submission.csv', index=False)
+# Export Results
+sub_res.to_csv('./submission.csv', index=False)
 
 
 print(f'Processing complete (time : {round(time.time()-start, 4)}s)')
