@@ -2,13 +2,13 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 class preprocessor :
-################### Constructor ###################
+    ################### Constructor ###################
     def __init__(self, sex):
         self.sex = sex
         self.dic_param = { 'male' : 1, 'female' : 0,
                            'S': 0, 'C': 1, 'Q': 2 }
 
-############# Preprocessing functions #############
+    ############# Preprocessing functions #############
     def preprocessing(self, df) :
         trainset, testset = train_test_split(df, test_size=0.2, random_state=0)
 
@@ -40,7 +40,7 @@ class preprocessor :
 
         return X, y
 
-################ Encoding functions ###############
+    ################ Encoding functions ###############
     def male_encode(self, df) :
         for col in df.select_dtypes(object):
             df[col] = df[col].map(self.dic_param)
@@ -53,7 +53,7 @@ class preprocessor :
         
         return df
 
-################ Imputing functions ###############
+    ################ Imputing functions ###############
     def male_impute(self, df) :
         return df.dropna()
     

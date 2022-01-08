@@ -18,12 +18,8 @@ from preprocessor import preprocessor
 print(" Done\n")
 
 print(f"{'    Sklearn modules' :-<50}", end="")
-from sklearn.metrics._plot.confusion_matrix import plot_confusion_matrix
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import f1_score, confusion_matrix, classification_report; plot_confusion_matrix
-from sklearn.model_selection import learning_curve
-from sklearn.preprocessing import PolynomialFeatures
-
+from model_trainer import model_trainer
 print(" Done\n")
 
 
@@ -136,28 +132,13 @@ print('Female X test  :', f_X_test.shape, f_y_test.shape, '\n')
 ################################################################################
 print("Modelization :")
 
-def evaluation (model, name, X_train, y_train, X_test, y_test) :
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
-
-    print(classification_report(y_test, y_pred))
-
-    plt.figure()
-    plot_confusion_matrix(model, X_test, y_test)
-    plt.savefig(f'../dat/fig/models/{name} matrix.png')
-
-    N, train_score, val_score = learning_curve(model, X_train, y_train, cv=4, train_sizes=np.linspace(0.1, 1, 10))
-    plt.figure()
-    plt.plot(N, train_score.mean(axis=1), label='Train score')
-    plt.plot(N, val_score.mean(axis=1), label='Val score')
-    plt.legend()
-    plt.savefig(f'../dat/fig/models/{name} learning curve')
-
 m_decision_tree = DecisionTreeClassifier(random_state=0)
 f_decision_tree = DecisionTreeClassifier(random_state=0)
 
-evaluation(m_decision_tree, 'Male Decision Tree', m_X_train, m_y_train, m_X_test, m_y_test)
-evaluation(f_decision_tree, 'Female Decision Tree', f_X_train, f_y_train, f_X_test, f_y_test)
+trainer = model_trainer()
+
+trainer.evaluation(m_decision_tree, 'Male Decision Tree', m_X_train, m_y_train, m_X_test, m_y_test)
+trainer.evaluation(f_decision_tree, 'Female Decision Tree', f_X_train, f_y_train, f_X_test, f_y_test)
 
 
 ################################################################################
