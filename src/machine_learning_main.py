@@ -13,13 +13,9 @@ import seaborn as sns
 print(" Done\n")
 
 print(f"{'    Sklearn modules' :-<50}", end="")
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, learning_curve
 from sklearn.metrics._plot.confusion_matrix import plot_confusion_matrix
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import f1_score, confusion_matrix, classification_report; plot_confusion_matrix
-from sklearn.model_selection import learning_curve
-from sklearn.preprocessing import PolynomialFeatures
-
 print(" Done\n")
 
 
@@ -171,6 +167,7 @@ def evaluation (model, name, X_train, y_train, X_test, y_test) :
     # plt.plot(N, val_score.mean(axis=1), label='Val score')
     # plt.legend()
     # plt.savefig(f'../dat/fig/models/{name} learning curve')
+
 
 m_decision_tree = DecisionTreeClassifier(random_state=0)
 f_decision_tree = DecisionTreeClassifier(random_state=0)
